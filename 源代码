@@ -1,0 +1,126 @@
+@echo off
+chcp 65001 >nul
+title Ren'Py 缓存清理工具
+
+REM 启用 ANSI 转义序列支持
+reg add HKCU\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>nul
+
+REM 定义颜色代码
+set "RESET=[0m"
+set "RED=[91m"
+set "GREEN=[92m"
+set "YELLOW=[93m"
+set "WHITE=[97m"
+
+set "TARGET_DIR=%1"
+
+if "%TARGET_DIR%"=="" (
+    set "TARGET_DIR=%CD%"
+)
+
+echo %YELLOW%========================================%RESET%
+echo %YELLOW%   Ren'Py 缓存清理工具 by 鸽纸不鸽%RESET%
+echo %YELLOW%========================================%RESET%
+echo.
+echo %WHITE%目标目录: %YELLOW%%TARGET_DIR%%RESET%
+echo.
+
+REM 检测是否为 Ren'Py 游戏根目录（必须存在 game 文件夹，避免误删文件）
+if not exist "%TARGET_DIR%\game" (
+    echo %RED%[错误] 请放在 Ren'Py 游戏的根目录文件夹中！%RESET%
+    echo %RED%原因：缺少 game 文件夹%RESET%
+    echo.
+    echo %YELLOW%3秒后自动关闭...%RESET%
+    timeout /t 3 /nobreak >nul
+    exit /b 1
+)
+
+REM 在开始清理前先检查所有要清理的文件是否存在，都存在的话就不用清理了
+set "FOUND_ANYTHING=0"
+
+REM 检查 .rpyc 文件
+dir /s /b "%TARGET_DIR%\*.rpyc" 2>nul | findstr /r ".*" >nul
+if not errorlevel 1 set "FOUND_ANYTHING=1"
+
+REM 检查 cache 文件夹
+if exist "%TARGET_DIR%\cache" set "FOUND_ANYTHING=1"
+
+REM 检查各种日志、报错文件
+if exist "%TARGET_DIR%\traceback.txt" set "FOUND_ANYTHING=1"
+if exist "%TARGET_DIR%\errors.txt" set "FOUND_ANYTHING=1"
+if exist "%TARGET_DIR%\log.txt" set "FOUND_ANYTHING=1"
+if exist "%TARGET_DIR%\renpy_extract_decompile.log.txt" set "FOUND_ANYTHING=1"
+
+REM 如果什么都没有找到，直接显示完成并退出
+if "%FOUND_ANYTHING%"=="0" (
+    echo.
+    echo %GREEN%清理完成，关闭即可。%RESET%
+    echo.
+    echo %WHITE%3秒后自动关闭...%RESET%
+    timeout /t 3 /nobreak >nul
+    exit /b 0
+)
+
+REM 开始删除这些文件
+set "HAS_ANYTHING=0"
+
+echo.
+echo %YELLOW%正在清理 .rpyc 文件...%RESET%
+del /s /q "%TARGET_DIR%\*.rpyc" 2>nul
+if errorlevel 1 (
+    echo   %YELLOW%- 没有找到 .rpyc 文件%RESET%
+) else (
+    echo   %GREEN%- .rpyc 文件已删除%RESET%
+    set "HAS_ANYTHING=1"
+)
+
+echo.
+echo %YELLOW%正在清理 cache 文件夹...%RESET%
+if exist "%TARGET_DIR%\cache" (
+    rmdir /s /q "%TARGET_DIR%\cache" 2>nul
+    echo   %GREEN%- cache 文件夹已删除%RESET%
+    set "HAS_ANYTHING=1"
+) else (
+    echo   %YELLOW%- 没有找到 cache 文件夹%RESET%
+)
+
+echo.
+echo %YELLOW%正在清理日志和错误文件...%RESET%
+
+if exist "%TARGET_DIR%\traceback.txt" (
+    del /q "%TARGET_DIR%\traceback.txt" 2>nul
+    echo   %GREEN%- traceback.txt 已删除%RESET%
+    set "HAS_ANYTHING=1"
+) else (
+    echo   %YELLOW%- traceback.txt 不存在%RESET%
+)
+
+if exist "%TARGET_DIR%\errors.txt" (
+    del /q "%TARGET_DIR%\errors.txt" 2>nul
+    echo   %GREEN%- errors.txt 已删除%RESET%
+    set "HAS_ANYTHING=1"
+) else (
+    echo   %YELLOW%- errors.txt 不存在%RESET%
+)
+
+if exist "%TARGET_DIR%\log.txt" (
+    del /q "%TARGET_DIR%\log.txt" 2>nul
+    echo   %GREEN%- log.txt 已删除%RESET%
+    set "HAS_ANYTHING=1"
+) else (
+    echo   %YELLOW%- log.txt 不存在%RESET%
+)
+
+if exist "%TARGET_DIR%\renpy_extract_decompile.log.txt" (
+    del /q "%TARGET_DIR%\renpy_extract_decompile.log.txt" 2>nul
+    echo   %GREEN%- renpy_extract_decompile.log.txt 已删除%RESET%
+    set "HAS_ANYTHING=1"
+) else (
+    echo   %YELLOW%- renpy_extract_decompile.log.txt 不存在%RESET%
+)
+
+
+echo.
+echo %WHITE%3秒后自动关闭...%RESET%
+timeout /t 3 /nobreak >nul
+exit /b 0
